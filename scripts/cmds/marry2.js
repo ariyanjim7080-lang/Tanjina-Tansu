@@ -5,9 +5,9 @@ const fs = require("fs")
 
 module.exports = {
     config: {
-        name: "marry",
-        aliases: ["marry"],
-        version: "1.0",
+        name: "marry2",
+        aliases: ["m"],
+        version: "1.1",
         author: "AceGun",
         countDown: 5,
         role: 0,
@@ -24,10 +24,10 @@ module.exports = {
       if(mention.length == 0) return message.reply("Please mention someone");
 else if(mention.length == 1){
 const one = event.senderID, two = mention[0];
-                bal(one, two).then(ptth => { message.reply({ body: "「 i love you babe🥰❤️ 」", attachment: fs.createReadStream(ptth) }) })
+                bal(one, two).then(ptth => { message.reply({ body: "「 Love you Babe🥰❤️ 」", attachment: fs.createReadStream(ptth) }) })
 } else{
  const one = mention[1], two = mention[0];
-            bal(one, two).then(ptth => { message.reply({ body: "「 i love you babe🥰❤️ 」" , attachment: fs.createReadStream(ptth) }) })
+            bal(one, two).then(ptth => { message.reply({ body: "「 Love you Babe🥰❤️ 」" , attachment: fs.createReadStream(ptth) }) })
 }
     }
 
@@ -40,10 +40,10 @@ async function bal(one, two) {
     avone.circle()
     let avtwo = await jimp.read(`https://graph.facebook.com/${two}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`)
     avtwo.circle()
-    let pth = "abcd.png"
-    let img = await jimp.read("https://i.imgur.com/qyn1vO1.jpg")
+    let pth = "marry2.png"
+    let img = await jimp.read("https://i.ibb.co/5TwSHpP/Guardian-Place-full-1484178.jpg")
 
-    img.resize(432, 280).composite(avone.resize(60, 60), 189, 15).composite(avtwo.resize(60, 60), 122, 25);
+    img.resize(600, 338).composite(avone.resize(75, 75), 262, 0).composite(avtwo.resize(80, 80), 350, 69);
 
     await img.writeAsync(pth)
     return pth
