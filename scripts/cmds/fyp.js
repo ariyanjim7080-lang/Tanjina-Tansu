@@ -43,7 +43,7 @@ module.exports = {
     longDescription: {
       en: "tiktok alternative",
     },
-    category: "media",
+    category: "fun",
     guide: {
       en: "{p}{n} [keyword]",
     },

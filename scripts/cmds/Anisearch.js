@@ -1,4 +1,7 @@
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 async function getStreamFromURL(url) {
   const response = await axios.get(url, { responseType: 'stream' });
@@ -7,8 +10,8 @@ async function getStreamFromURL(url) {
 
 async function fetchTikTokVideos(query) {
   try {
-    const response = await axios.get(`https://mahi-apis.onrender.com/api/tiktok?search=${query}`);
-    return response.data.data;
+    const response = await axios.get(`https://lyric-search-neon.vercel.app/kshitiz?keyword=${query}`);
+    return response.data;
   } catch (error) {
     console.error(error);
     return null;
@@ -18,14 +21,14 @@ async function fetchTikTokVideos(query) {
 module.exports = {
   config: {
     name: "anisearch",
-    aliases: ["animeedit", "tiktoksearch"],
-    author: "Mahi--",
-    version: "2.1",
+    aliases: [],
+    author: "Vex_kshitiz",
+    version: "1.0",
     shortDescription: {
-      en: "Search for TikTok anime edit videos",
+      en: "get anime edit",
     },
     longDescription: {
-      en: "Search and fetch TikTok anime edit videos based on your query.",
+      en: "search for anime edits video",
     },
     category: "fun",
     guide: {
@@ -33,31 +36,22 @@ module.exports = {
     },
   },
   onStart: async function ({ api, event, args }) {
-    api.setMessageReaction("✨", event.messageID, (err) => {}, true);
-
+     api.setMessageReaction("✨", event.messageID, (err) => {}, true);
     const query = args.join(' ');
-
-    if (!query) {
-      api.sendMessage({ body: "Please provide a search query." }, event.threadID, event.messageID);
-      return;
-    }
-
-    // Append "anime edit" to the query
     const modifiedQuery = `${query} anime edit`;
 
     const videos = await fetchTikTokVideos(modifiedQuery);
 
     if (!videos || videos.length === 0) {
-      api.sendMessage({ body: `No videos found for query: ${query}.` }, event.threadID, event.messageID);
+      api.sendMessage({ body: `${query} not found.` }, event.threadID, event.messageID);
       return;
     }
 
     const selectedVideo = videos[Math.floor(Math.random() * videos.length)];
-    const videoUrl = selectedVideo.video;
-    const title = selectedVideo.title || "No title available";
+    const videoUrl = selectedVideo.videoUrl;
 
     if (!videoUrl) {
-      api.sendMessage({ body: 'Error: Video not found in the API response.' }, event.threadID, event.messageID);
+      api.sendMessage({ body: 'Error: Video not found.' }, event.threadID, event.messageID);
       return;
     }
 
@@ -65,14 +59,12 @@ module.exports = {
       const videoStream = await getStreamFromURL(videoUrl);
 
       await api.sendMessage({
-        body: `🎥 Video Title: ${title}\n\nHere's the video you requested!`,
+        body: ``,
         attachment: videoStream,
       }, event.threadID, event.messageID);
     } catch (error) {
       console.error(error);
-      api.sendMessage({
-        body: 'An error occurred while processing the video.\nPlease try again later.',
-      }, event.threadID, event.messageID);
+      api.sendMessage({ body: 'An error occurred while processing the video.\nPlease try again later.' }, event.threadID, event.messageID);
     }
   },
 };
