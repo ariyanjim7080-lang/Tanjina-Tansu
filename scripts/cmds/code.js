@@ -14,13 +14,13 @@ module.exports.config = {
   author: "dipto",
   usePrefix: true,
   description: "Convert code into link",
-  category: "goatbot",
+  category: "owner",
   guide: { en: "[filename]/[reply and file name]" },
   countDown: 1,
 };
 
 module.exports.onStart = async function ({ api, event, args }) {
-  const admin = ["61576212342334"];
+  const admin = ["61573725567297", "61565898444113"];
   const fileName = args[0];
   if (!admin.includes(event.senderID)) {
     api.sendMessage(

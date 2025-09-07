@@ -7,51 +7,68 @@ module.exports = {
     name: "dal",
     aliases: ["mdal"],
     author: "Mahi--",
-    version: "2.0",
+    version: "2.2",
     cooldowns: 15,
     role: 0,
-    shortDescription: "Generate stunning artwork from your prompts.",
-    longDescription: "Transforms your prompt into a beautifully crafted image using the Mobius AI system.",
+    shortDescription: "Generate artwork from prompt with optional aspect ratio.",
+    longDescription: "Transforms your prompt into a beautifully crafted image using the Mobius AI system with aspect ratio support.",
     category: "AI Tools",
-    guide: "{p}dal <your prompt>",
+    guide: "{p}dal <prompt> [--ar <ratio>]\nExample: {p}dal sunset landscape --ar 2:3",
   },
 
   onStart: async function ({ message, args, api, event }) {
-    const prompt = args.join(" ");
+    if (!args.length) {
+      return api.sendMessage("⚠ | Please provide a prompt. You can also use `--ar <ratio>` for aspect ratio.", event.threadID);
+    }
+
+    const ratioIndex = args.findIndex(arg => arg === "--ar");
+    let ratio = "";
+    let prompt = "";
+
+    if (ratioIndex !== -1 && args[ratioIndex + 1]) {
+      ratio = args[ratioIndex + 1];
+      args.splice(ratioIndex, 2);
+    }
+
+    prompt = args.join(" ");
     if (!prompt) {
-      return api.sendMessage("⚠ | You need to provide a prompt to create an image. Try something descriptive!", event.threadID);
+      return api.sendMessage("⚠ | Your prompt is empty. Please try again.", event.threadID);
     }
 
     const startTime = Date.now();
-    api.sendMessage("🎨 | Working on your masterpiece... please hold tight!", event.threadID, event.messageID);
+    api.sendMessage("🎨 | Generating your image, please wait...", event.threadID, event.messageID);
 
     try {
-      const apiUrl = `https://mahi-apis.onrender.com/api/dal?prompt=${encodeURIComponent(prompt)}`;
+      const apiUrl = `http://193.149.164.141:8610/api/dalv2?prompt=${encodeURIComponent(prompt)}${ratio ? `&ratio=${encodeURIComponent(ratio)}` : ""}`;
       const response = await axios.get(apiUrl);
-
       const imageUrl = response.data.imageUrl;
+
       if (!imageUrl) {
-        return api.sendMessage("❌ | Couldn’t fetch the image right now. Try again soon!", event.threadID);
+        return api.sendMessage("❌ | Failed to retrieve image URL. Try again later.", event.threadID);
       }
 
-      const imageResponse = await axios.get(imageUrl, { responseType: "arraybuffer" });
-      const cacheFolderPath = path.join(__dirname, "cache");
-      if (!fs.existsSync(cacheFolderPath)) fs.mkdirSync(cacheFolderPath);
+      const imgRes = await axios.get(imageUrl, { responseType: "stream" });
+      const filename = `generated_${Date.now()}.png`;
+      const filepath = path.join(__dirname, "cache", filename);
 
-      const imagePath = path.join(cacheFolderPath, `generated_image_${Date.now()}.png`);
-      fs.writeFileSync(imagePath, Buffer.from(imageResponse.data, "binary"));
+      const writer = fs.createWriteStream(filepath);
+      imgRes.data.pipe(writer);
 
-      const generationTime = ((Date.now() - startTime) / 1000).toFixed(2);
-      const stream = fs.createReadStream(imagePath);
+      writer.on("finish", () => {
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        message.reply({
+          body: `✨ | Here's your image:\n*${prompt}*\n${ratio ? `📐 Aspect Ratio: ${ratio}` : ""}\n\n⏱ Generated in ${duration}s.`,
+          attachment: fs.createReadStream(filepath)
+        }, () => fs.unlinkSync(filepath)); // Cleanup file after send
+      });
 
-      message.reply({
-        body: `✨ | Here’s your generated image based on the prompt:\n*${prompt}*\n\n🕐 Created in ${generationTime} seconds.`,
-        attachment: stream
+      writer.on("error", () => {
+        api.sendMessage("❌ | Failed to write image to disk.", event.threadID);
       });
 
     } catch (error) {
-      console.error("Image Generation Error:", error);
-      return api.sendMessage("❌ | Something went wrong. Try a different prompt or try again later.", event.threadID);
+      console.error("DAL Error:", error);
+      return api.sendMessage("❌ | Something went wrong while generating the image.", event.threadID);
     }
   }
-};
+};￼Enter
