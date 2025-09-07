@@ -1,43 +1,54 @@
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
+const axios = require('axios');
+const supportedIds = ["rachel", "drew", "clyde", "paul", "domi", "dave", "fin", "sarah", "antoni", "thomas", "charlie", "george", "emily", "elli", "callum", "patrick", "harry", "liam", "dorothy", "josh", "arnold", "charlotte", "alice", "matilda", "matthew", "james", "joseph", "jeremy", "michael", "ethan", "chris", "gigi", "freya", "brian", "grace", "daniel", "lily", "serena", "adam", "nicole", "bill", "jessie", "sam", "glinda", "giovanni", "mimi"];
 
 module.exports = {
   config: {
     name: "voice",
-    aliases: ["aniaudio"],
-    author: "Kshitiz",
     version: "1.0",
-    cooldowns: 5,
+    author: "Rishad",
+    countDown: 5,
     role: 0,
-    shortDescription: "Get anime voice",
-    longDescription: "Get anime voice based on animeName",
-    category: "anime",
-    guide: "{p}anivoice animeName",
+    category: "Fun",
+    ShortDescription: "Generate voice using AI",
+    LongDescription: "Generates voice using an AI.",
+    guide: {
+      en: "{pn} (voice id) | texts\nExample: {pn} rachel | hey there\n{pn} list | Get the list of supported voice IDs"
+    }
   },
 
-  onStart: async function ({ api, event, args, message }) {
-    api.setMessageReaction("🕐", event.messageID, (err) => {}, true);
-    const categories = ["jjk", "naruto", "ds", "aot", "bleach", "onepiece"];
+  onStart: async function ({ api, args, message, event }) {
+    const { getPrefix, getStreamFromURL } = global.utils;
+    const p = getPrefix(event.threadID);
 
-    if (args.length !== 1 || !categories.includes(args[0].toLowerCase())) {
-      return message.reply(`Please specify a valid category. Available categories: ${categories.join(", ")}`);
+    const command = args.join(" ").split("|");
+    if (command.length !== 2) {
+      if (args[0].toLowerCase() === 'list') {
+        return api.sendMessage(`Supported voice IDs are:\n ${supportedIds.join("\n")}`, event.threadID, event.messageID);
+      }
+      return message.reply(`❌Invalid command format. Use it like this:\n${p}voice rachel | Hey there`);
     }
 
+    const voiceId = command[0].trim().toLowerCase();
+    const text = command[1].trim();
+
+    if (!supportedIds.includes(voiceId)) {
+      return message.reply(`❌Invalid voice ID. Supported IDs are:\n ${supportedIds.join("\n")}`);
+    }
+
+    const apiKey = 'fuck';
+    const apiUrl = `https://for-devs.onrender.com/api/voice?text=${encodeURIComponent(text)}&voiceid=${voiceId}&apikey=${apiKey}`;
+
     try {
-      const category = args[0].toLowerCase();
-      const response = await axios.get(`https://anivoice-bjfl.onrender.com/kshitiz/${category}`, { responseType: "arraybuffer" });
+      const voiceStream = await getStreamFromURL(apiUrl);
 
-      const tempVoicePath = path.join(__dirname, "cache", `${Date.now()}.mp3`);
-      fs.writeFileSync(tempVoicePath, Buffer.from(response.data, 'binary'));
-
-      const stream = fs.createReadStream(tempVoicePath);
-      message.reply({ attachment: stream });
-
-      api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+      if (voiceStream) {
+        return api.sendMessage({ attachment: voiceStream }, event.threadID, event.messageID);
+      } else {
+        return api.sendMessage('Failed to generate voice.', event.threadID, event.messageID);
+      }
     } catch (error) {
       console.error(error);
-      message.reply("Sorry, an error occurred while processing your request.");
+      return api.sendMessage('Failed to generate voice.', event.threadID, event.messageID);
     }
   }
 };

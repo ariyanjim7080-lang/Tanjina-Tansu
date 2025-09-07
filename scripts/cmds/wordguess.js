@@ -68,4 +68,4 @@ function shuffleWord(word) {
 
 function formatText(text) {
   return text.toLowerCase();
-}
+    }
