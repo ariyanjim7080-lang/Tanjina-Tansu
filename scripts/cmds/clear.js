@@ -12,7 +12,7 @@ module.exports = {
     longDescription: {
       en: "unsent all messages sent by bot"
     },
-    category: "box chat",
+    category: "𝗕𝗢𝗫",
     guide: {
       en: "{p}{n}"
     }
