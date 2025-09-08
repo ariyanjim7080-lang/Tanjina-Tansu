@@ -16,32 +16,24 @@
  * ! Nếu thay đổi nó, bạn sẽ bị cấm vĩnh viễn
  * Cảm ơn bạn đã sử dụng
  */
-const express = require('express');
-const path = require('path');
-const { spawn } = require('child_process');
-const log = require('./logger/log.js');
-const app = express();
-const PORT = 3000;
-app.use(express.static(path.join(__dirname, 'dashboard')));
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dashboard', 'page.html'));
-});
+
+const { spawn } = require("child_process");
+const log = require("./logger/log.js");
+const keepAlive = require('./keep-alive.js');
+
 function startProject() {
-  const child = spawn('node', ['Goat.js'], {
-    cwd: __dirname,
-    stdio: 'inherit',
-    shell: true,
-  });
-  child.on('close', (code) => {
-    if (code == 2) {
-      log.info('Restarting Project...');
-      startProject();
-    }
-  });
+	const child = spawn("node", ["Goat.js"], {
+		cwd: __dirname,
+		stdio: "inherit",
+		shell: true
+	});
+
+	child.on("close", (code) => {
+		if (code == 2) {
+			log.info("Restarting Project...");
+			startProject();
+		}
+	});
 }
 
 startProject();
-
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
