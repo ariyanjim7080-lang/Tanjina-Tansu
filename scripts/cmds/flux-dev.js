@@ -6,7 +6,7 @@ const { createCanvas, loadImage } = require('canvas');
 
 module.exports = {
   config: {
-    name: "fluxpro",
+    name: "fluxDev",
     version: "1.0",
     author: "Redwan",
     countDown: 10,
@@ -25,11 +25,11 @@ module.exports = {
     if (!prompt) return message.reply("Please provide a prompt to generate the image.");
 
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
-    message.reply("FluxPro is generating your images. Please wait...", async (err) => {
+    message.reply("FluxDev is generating your images. Please wait...", async (err) => {
       if (err) return console.error(err);
 
       try {
-        const apiUrl = `http://65.109.80.126:20511/api/fluxpro?prompt=${encodeURIComponent(prompt)}`;
+        const apiUrl = `http://65.109.80.126:20511/api/flux1-dev?prompt=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
         const { status, images } = response.data;
 
@@ -60,7 +60,7 @@ module.exports = {
         out.on("finish", async () => {
           api.setMessageReaction("✅", event.messageID, () => {}, true);
           const msg = {
-            body: "FluxPro has finished generating your images!\n\n❏ Reply with U1, U2, U3, or U4 to select one.",
+            body: "FluxDev has finished generating your images!\n\n❏ Reply with U1, U2, U3, or U4 to select one.",
             attachment: fs.createReadStream(outputPath)
           };
           message.reply(msg, (err, info) => {
@@ -113,4 +113,3 @@ module.exports = {
     }
   }
 };
-              

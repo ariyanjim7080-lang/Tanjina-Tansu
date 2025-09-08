@@ -6,12 +6,12 @@ const { createCanvas, loadImage } = require('canvas');
 
 module.exports = {
   config: {
-    name: "fluxpro",
+    name: "fastx",
     version: "1.0",
     author: "Redwan",
     countDown: 10,
     longDescription: {
-      en: "Generate fast AI images using the FluxPro engine (Redwan's API)."
+      en: "Generate fast AI images using the FastX engine (Redwan's API)."
     },
     category: "Image Generation",
     role: 0,
@@ -25,21 +25,20 @@ module.exports = {
     if (!prompt) return message.reply("Please provide a prompt to generate the image.");
 
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
-    message.reply("FluxPro is generating your images. Please wait...", async (err) => {
+    message.reply("FastX is generating your images. Please wait...", async (err, info) => {
       if (err) return console.error(err);
 
       try {
-        const apiUrl = `http://65.109.80.126:20511/api/fluxpro?prompt=${encodeURIComponent(prompt)}`;
+        const apiUrl = `http://65.109.80.126:20511/api/fastx?prompt=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
-        const { status, images } = response.data;
+        const { images, status } = response.data;
 
         if (!status || !images || images.length !== 4) {
           api.setMessageReaction("❌", event.messageID, () => {}, true);
           return message.reply("Image generation failed. Please try again.");
         }
 
-        const imageUrls = images.map(img => img.data[0].url);
-        const imageObjs = await Promise.all(imageUrls.map(url => loadImage(url)));
+        const imageObjs = await Promise.all(images.map(url => loadImage(url)));
 
         const canvas = createCanvas(1024, 1024);
         const ctx = canvas.getContext('2d');
@@ -52,7 +51,7 @@ module.exports = {
         const cacheDir = path.join(__dirname, 'cache');
         if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
-        const outputPath = path.join(cacheDir, `fluxpro_collage_${event.senderID}.png`);
+        const outputPath = path.join(cacheDir, `fastx_collage_${event.senderID}.png`);
         const out = fs.createWriteStream(outputPath);
         const stream = canvas.createPNGStream();
         stream.pipe(out);
@@ -60,7 +59,7 @@ module.exports = {
         out.on("finish", async () => {
           api.setMessageReaction("✅", event.messageID, () => {}, true);
           const msg = {
-            body: "FluxPro has finished generating your images!\n\n❏ Reply with U1, U2, U3, or U4 to select one.",
+            body: "FastX has finished generating your images!\n\n❏ Reply with U1, U2, U3, or U4 to select one.",
             attachment: fs.createReadStream(outputPath)
           };
           message.reply(msg, (err, info) => {
@@ -69,12 +68,9 @@ module.exports = {
               commandName: this.config.name,
               messageID: info.messageID,
               author: event.senderID,
-              images: imageUrls
+              images
             });
           });
-
-          // Optional: clean up the generated file after some time
-          setTimeout(() => fs.unlink(outputPath, () => {}), 60 * 1000);
         });
 
       } catch (error) {
@@ -102,9 +98,9 @@ module.exports = {
     const selectedImage = images[index];
 
     try {
-      const imageStream = await getStreamFromURL(selectedImage, `fluxpro_selected_U${index + 1}.jpg`);
+      const imageStream = await getStreamFromURL(selectedImage, `fastx_selected_U${index + 1}.jpg`);
       message.reply({
-        body: `Here is your selected image (U${index + 1}) from FluxPro.`,
+        body: `Here is your selected image (U${index + 1}) from FastX.`,
         attachment: imageStream
       });
     } catch (error) {
@@ -113,4 +109,3 @@ module.exports = {
     }
   }
 };
-              

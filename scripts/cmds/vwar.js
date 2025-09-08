@@ -1,18 +1,24 @@
+const axios = require('axios');
+const fs = require('fs-extra');
+
 module.exports = {
   config: {
-    name: "war",
-    version: "2.1",
-    author: "Xemon (Redwan)",
-    role: 2,
-    category: "texts",
-    shortDescription: "Send offensive messages to tagged users",
-    longDescription: "Send a series of offensive messages to a tagged user. Add 'loop' as an argument to repeat indefinitely.",
-    guide: "{prefix}war @mention [loop]"
+    name: "vwar",
+    version: "3.2",
+    author: "Redwan",
+    countDown: 5,
+    role: 0,
+    category: "Fun",
+    ShortDescription: "Voice war with mentions",
+    LongDescription: "Tag a user and the bot will send multiple TTS voice messages to scold them.",
+    guide: {
+      en: "{pn} @mention"
+    }
   },
 
   onStart: async function ({ api, event, args }) {
     const mention = Object.keys(event.mentions)[0];
-    if (!mention) return api.sendMessage("Tag one person to scold them!", event.threadID);
+    if (!mention) return api.sendMessage("Tag one person to start the voice war!", event.threadID);
 
     const name = event.mentions[mention];
     const arraytag = [{ id: mention, tag: name }];
@@ -58,16 +64,41 @@ module.exports = {
       `তর মাকে ফুটবল বানিয়ে খেলমু। ${name}`
     ];
 
-    const sendMessageLoop = async () => {
-      while (true) {
-        for (const message of messages) {
-          await new Promise(resolve => setTimeout(resolve, delay));
-          api.sendMessage({ body: message, mentions: arraytag }, event.threadID);
-        }
-        if (!args.includes("loop")) break;
-      }
-    };
+    async function processMessages(index) {
+      if (index >= messages.length) return;
 
-    await sendMessageLoop();
+      const text = messages[index].trim();
+      const path = `./tts_${index}.mp3`;
+      const apiURL = `https://tts-siam-apiproject.vercel.app/speech?text=${encodeURIComponent(text)}`;
+
+      try {
+        const response = await axios({
+          method: "get",
+          url: apiURL,
+          responseType: "stream"
+        });
+
+        const writer = fs.createWriteStream(path);
+        response.data.pipe(writer);
+
+        writer.on("finish", async () => {
+          await api.sendMessage(
+            { body: text, attachment: fs.createReadStream(path), mentions: arraytag },
+            event.threadID,
+            async () => {
+              fs.remove(path);
+              setTimeout(() => processMessages(index + 1), delay);
+            }
+          );
+        });
+
+      } catch (err) {
+        console.error(err);
+        api.sendMessage(`Error processing message ${index + 1}: "${text}"`, event.threadID);
+        setTimeout(() => processMessages(index + 1), delay);
+      }
+    }
+
+    processMessages(0);
   }
 };

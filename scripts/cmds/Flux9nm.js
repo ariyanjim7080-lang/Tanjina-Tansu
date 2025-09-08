@@ -6,18 +6,19 @@ const { createCanvas, loadImage } = require('canvas');
 
 module.exports = {
   config: {
-    name: "fluxpro",
-    version: "1.0",
+    name: "Flux9nm",
+    version: "1.5",
     author: "Redwan",
-    countDown: 10,
+    aliases: ["f9nm", "flux9"],
+    countDown: 20,
     longDescription: {
-      en: "Generate fast AI images using the FluxPro engine (Redwan's API)."
+      en: "Generate ultra-realistic images using Flux9nm prompts.",
     },
-    category: "Image Generation",
-    role: 0,
+    category: "image",
+    role: 2,
     guide: {
-      en: "{pn} <prompt>"
-    }
+      en: "{pn} <prompt>",
+    },
   },
 
   onStart: async function ({ api, event, args, message }) {
@@ -25,68 +26,83 @@ module.exports = {
     if (!prompt) return message.reply("Please provide a prompt to generate the image.");
 
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
-    message.reply("FluxPro is generating your images. Please wait...", async (err) => {
+    message.reply("Processing your request. Please wait...", async (err, info) => {
       if (err) return console.error(err);
 
       try {
-        const apiUrl = `http://65.109.80.126:20511/api/fluxpro?prompt=${encodeURIComponent(prompt)}`;
+        // Step 1: Send the prompt to the API
+        const apiUrl = `https://zaikyoov3-up.up.railway.app/api/mj-6.1?prompt=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
-        const { status, images } = response.data;
+        const { id, status, pollingUrl } = response.data;
 
-        if (!status || !images || images.length !== 4) {
+        if (status !== 'processing') {
+          return message.reply("Failed to initiate image generation. Please try again.");
+        }
+
+        // Step 2: Polling for image generation completion
+        let pollStatus = 'processing';
+        let imageUrls = [];
+        while (pollStatus === 'processing') {
+          const pollResponse = await axios.get(pollingUrl);
+          pollStatus = pollResponse.data.status;
+
+          if (pollStatus === 'completed') {
+            imageUrls = pollResponse.data.urls;
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 5000)); // wait for 5 seconds before polling again
+          }
+        }
+
+        if (!imageUrls || imageUrls.length !== 4) {
           api.setMessageReaction("❌", event.messageID, () => {}, true);
           return message.reply("Image generation failed. Please try again.");
         }
 
-        const imageUrls = images.map(img => img.data[0].url);
-        const imageObjs = await Promise.all(imageUrls.map(url => loadImage(url)));
-
+        // Step 3: Create a collage from the 4 images
+        const images = await Promise.all(imageUrls.map(url => loadImage(url)));
         const canvas = createCanvas(1024, 1024);
         const ctx = canvas.getContext('2d');
 
-        ctx.drawImage(imageObjs[0], 0, 0, 512, 512);
-        ctx.drawImage(imageObjs[1], 512, 0, 512, 512);
-        ctx.drawImage(imageObjs[2], 0, 512, 512, 512);
-        ctx.drawImage(imageObjs[3], 512, 512, 512, 512);
+        ctx.drawImage(images[0], 0, 0, 512, 512);
+        ctx.drawImage(images[1], 512, 0, 512, 512);
+        ctx.drawImage(images[2], 0, 512, 512, 512);
+        ctx.drawImage(images[3], 512, 512, 512, 512);
 
-        const cacheDir = path.join(__dirname, 'cache');
-        if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
-
-        const outputPath = path.join(cacheDir, `fluxpro_collage_${event.senderID}.png`);
+        const outputPath = path.join(__dirname, 'cache', `collage_${event.senderID}.png`);
         const out = fs.createWriteStream(outputPath);
         const stream = canvas.createPNGStream();
         stream.pipe(out);
 
         out.on("finish", async () => {
           api.setMessageReaction("✅", event.messageID, () => {}, true);
+
           const msg = {
-            body: "FluxPro has finished generating your images!\n\n❏ Reply with U1, U2, U3, or U4 to select one.",
-            attachment: fs.createReadStream(outputPath)
+            body: "Flux9nm process completed ✨\n\n❏ Action: U1, U2, U3, U4",
+            attachment: fs.createReadStream(outputPath),
           };
+
           message.reply(msg, (err, info) => {
             if (err) return console.error(err);
             global.GoatBot.onReply.set(info.messageID, {
               commandName: this.config.name,
               messageID: info.messageID,
               author: event.senderID,
-              images: imageUrls
+              images: imageUrls,
             });
           });
-
-          // Optional: clean up the generated file after some time
-          setTimeout(() => fs.unlink(outputPath, () => {}), 60 * 1000);
         });
 
       } catch (error) {
         api.setMessageReaction("❌", event.messageID, () => {}, true);
         console.error(error);
-        message.reply("An error occurred while generating the image. Please try again.");
+        message.reply("An error occurred while generating the image. Please try again later.");
       }
     });
   },
 
   onReply: async function ({ api, event, Reply, message }) {
     const { author, images } = Reply;
+
     if (event.senderID !== author) {
       return message.reply("Only the user who initiated the command can select an image.");
     }
@@ -102,15 +118,14 @@ module.exports = {
     const selectedImage = images[index];
 
     try {
-      const imageStream = await getStreamFromURL(selectedImage, `fluxpro_selected_U${index + 1}.jpg`);
+      const imageStream = await getStreamFromURL(selectedImage, `selected_U${index + 1}.jpg`);
       message.reply({
-        body: `Here is your selected image (U${index + 1}) from FluxPro.`,
-        attachment: imageStream
+        body: `Here is your selected image (U${index + 1}).`,
+        attachment: imageStream,
       });
     } catch (error) {
       console.error(error);
       message.reply("Unable to retrieve the selected image. Please try again.");
     }
-  }
+  },
 };
-              

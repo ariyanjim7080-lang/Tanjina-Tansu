@@ -6,12 +6,12 @@ const { createCanvas, loadImage } = require('canvas');
 
 module.exports = {
   config: {
-    name: "fluxpro",
+    name: "Fluxschnell",
     version: "1.0",
     author: "Redwan",
     countDown: 10,
     longDescription: {
-      en: "Generate fast AI images using the FluxPro engine (Redwan's API)."
+      en: "Generate fast AI images using the Flux.1-schnell engine (Redwan's API)."
     },
     category: "Image Generation",
     role: 0,
@@ -29,7 +29,7 @@ module.exports = {
       if (err) return console.error(err);
 
       try {
-        const apiUrl = `http://65.109.80.126:20511/api/fluxpro?prompt=${encodeURIComponent(prompt)}`;
+        const apiUrl = `http://65.109.80.126:20511/api/flux1-schnell?prompt=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
         const { status, images } = response.data;
 

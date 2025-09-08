@@ -6,12 +6,12 @@ const { createCanvas, loadImage } = require('canvas');
 
 module.exports = {
   config: {
-    name: "fluxpro",
+    name: "Bing",
     version: "1.0",
     author: "Redwan",
     countDown: 10,
     longDescription: {
-      en: "Generate fast AI images using the FluxPro engine (Redwan's API)."
+      en: "Generate fast AI images using the Bing engine (Redwan's API)."
     },
     category: "Image Generation",
     role: 0,
@@ -25,11 +25,11 @@ module.exports = {
     if (!prompt) return message.reply("Please provide a prompt to generate the image.");
 
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
-    message.reply("FluxPro is generating your images. Please wait...", async (err) => {
+    message.reply("Bing is generating your images. Please wait...", async (err) => {
       if (err) return console.error(err);
 
       try {
-        const apiUrl = `http://65.109.80.126:20511/api/fluxpro?prompt=${encodeURIComponent(prompt)}`;
+        const apiUrl = `http://65.109.80.126:20511/api/bing?prompt=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
         const { status, images } = response.data;
 
@@ -38,7 +38,7 @@ module.exports = {
           return message.reply("Image generation failed. Please try again.");
         }
 
-        const imageUrls = images.map(img => img.data[0].url);
+        const imageUrls = images.map(img => img.data?.[0]?.url).filter(Boolean);
         const imageObjs = await Promise.all(imageUrls.map(url => loadImage(url)));
 
         const canvas = createCanvas(1024, 1024);
@@ -52,7 +52,7 @@ module.exports = {
         const cacheDir = path.join(__dirname, 'cache');
         if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
-        const outputPath = path.join(cacheDir, `fluxpro_collage_${event.senderID}.png`);
+        const outputPath = path.join(cacheDir, `fluxpro_collage_${event.senderID}_${Date.now()}.png`);
         const out = fs.createWriteStream(outputPath);
         const stream = canvas.createPNGStream();
         stream.pipe(out);
@@ -60,7 +60,7 @@ module.exports = {
         out.on("finish", async () => {
           api.setMessageReaction("✅", event.messageID, () => {}, true);
           const msg = {
-            body: "FluxPro has finished generating your images!\n\n❏ Reply with U1, U2, U3, or U4 to select one.",
+            body: "Bing has finished generating your images!\n\n❏ Reply with U1, U2, U3, or U4 to select one.",
             attachment: fs.createReadStream(outputPath)
           };
           message.reply(msg, (err, info) => {
@@ -73,7 +73,6 @@ module.exports = {
             });
           });
 
-          // Optional: clean up the generated file after some time
           setTimeout(() => fs.unlink(outputPath, () => {}), 60 * 1000);
         });
 
@@ -113,4 +112,3 @@ module.exports = {
     }
   }
 };
-              
